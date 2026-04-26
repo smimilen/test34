@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
-import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 
 const BODY_MATS = ['body.012']
 const DARK_MATS = ['glossy_black.002','glossy_black.003','grill','Mat_MT.001','Mat_mt.001','mat_mt','mat_mt.001']
@@ -57,6 +57,8 @@ export default function Car3D() {
     controls.target.set(0, 0.5, 0)
     controls.enablePan = false
     controls.enableZoom = false
+    controls.enableDamping = true
+    controls.dampingFactor = 0.08
     controls.minPolarAngle = Math.PI * 0.12
     controls.maxPolarAngle = Math.PI * 0.50
     controls.autoRotate = true
@@ -116,12 +118,9 @@ export default function Car3D() {
       color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.5, roughness: 0.1,
     })
 
-    // DRACOLoader — декодер берётся с CDN
-    const dracoLoader = new DRACOLoader()
-    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/')
-
+    // Meshopt — работает без Web Workers, совместим с GitHub Pages
     const loader = new GLTFLoader()
-    loader.setDRACOLoader(dracoLoader)
+    loader.setMeshoptDecoder(MeshoptDecoder)
 
     const modelUrl = import.meta.env.BASE_URL + 'supra.glb'
     let car = null
@@ -136,13 +135,21 @@ export default function Car3D() {
         const box = new THREE.Box3().setFromObject(car)
         const size = box.getSize(new THREE.Vector3())
         const center = box.getCenter(new THREE.Vector3())
-        const scale = 4.0 / Math.max(size.x, size.y, size.z)
+        const scale = 4.4 / Math.max(size.x, size.y, size.z)
         car.scale.setScalar(scale)
 
         box.setFromObject(car)
         box.getCenter(center)
         car.position.sub(center)
         car.position.y = 0
+
+        car.traverse((node) => {
+          const name = node.name.toLowerCase()
+          if (name.includes('logo') || name.includes('badge') ||
+              name.includes('emblem') || name.includes('toyota')) {
+            node.visible = false
+          }
+        })
 
         car.traverse((node) => {
           if (!node.isMesh) return
@@ -206,14 +213,13 @@ export default function Car3D() {
       clearTimeout(resumeTimer)
       window.removeEventListener('resize', onResize)
       controls.dispose()
-      dracoLoader.dispose()
       try { if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement) } catch(e) {}
       renderer.dispose()
     }
   }, [])
 
   return (
-    <div ref={mountRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+    <div ref={mountRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', cursor: 'grab' }}>
       {loading && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
           <div style={{ width: 200, height: 1, background: 'rgba(255,255,255,0.1)', position: 'relative' }}>
@@ -225,7 +231,7 @@ export default function Car3D() {
         </div>
       )}
       {!loading && hint && (
-        <div style={{ position: 'absolute', bottom: '12%', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, pointerEvents: 'none', zIndex: 10, animation: 'hf 1s ease 0.5s both' }}>
+        <div style={{ position: 'absolute', bottom: '12%', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, pointerEvents: 'none', zIndex: 1, animation: 'hf 1s ease 0.5s both' }}>
           <style>{`@keyframes hf{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}} @keyframes hs{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}`}</style>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ animation: 'hs 2s ease-in-out infinite', opacity: 0.4 }}>
             <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="1.2"/>
