@@ -38,7 +38,7 @@ export default function Hero() {
           <span style={{ fontSize: 10, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-mono)' }}>Премиум детейлинг студия</span>
         </div>
         <h1 ref={titleRef} className="f-display" style={{ fontSize: 'clamp(52px,8.5vw,116px)', lineHeight: 0.88, maxWidth: 640, marginBottom: 28 }}>
-          ДЕТЕЙЛИНГ<br />БЕЗ<br />КОМПРОМИССОВ
+         ДЕТЕЙЛИНГ<br />БЕЗ КОМПРОМИССОВ
         </h1>
         <p ref={subRef} style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', lineHeight: 1.85, maxWidth: 380, marginBottom: 44, fontFamily: 'var(--font-body)' }}>
           Защита. Точность.<br />Абсолютный контроль над каждой<br />поверхностью вашего автомобиля.
