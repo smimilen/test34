@@ -53,13 +53,10 @@ export default function Car3D() {
     camera.position.set(5.0, 2.2, 6.5)
     camera.lookAt(0, 0.5, 0)
 
-    // ✅ ИСПРАВЛЕНИЕ: damping для плавного вращения
     const controls = new OrbitControls(camera, renderer.domElement)
     controls.target.set(0, 0.5, 0)
     controls.enablePan = false
     controls.enableZoom = false
-    controls.enableDamping = true
-    controls.dampingFactor = 0.08
     controls.minPolarAngle = Math.PI * 0.12
     controls.maxPolarAngle = Math.PI * 0.50
     controls.autoRotate = true
@@ -119,6 +116,7 @@ export default function Car3D() {
       color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.5, roughness: 0.1,
     })
 
+    // DRACOLoader — декодер берётся с CDN
     const dracoLoader = new DRACOLoader()
     dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/')
 
@@ -135,11 +133,10 @@ export default function Car3D() {
       (gltf) => {
         car = gltf.scene
 
-        // ✅ ИСПРАВЛЕНИЕ: машина на 10% больше (4.4 вместо 4.0)
         const box = new THREE.Box3().setFromObject(car)
         const size = box.getSize(new THREE.Vector3())
         const center = box.getCenter(new THREE.Vector3())
-        const scale = 4.4 / Math.max(size.x, size.y, size.z)
+        const scale = 4.0 / Math.max(size.x, size.y, size.z)
         car.scale.setScalar(scale)
 
         box.setFromObject(car)
@@ -147,20 +144,6 @@ export default function Car3D() {
         car.position.sub(center)
         car.position.y = 0
 
-        // ✅ ИСПРАВЛЕНИЕ: убираем лого Toyota
-        car.traverse((node) => {
-          const name = node.name.toLowerCase()
-          if (
-            name.includes('logo') ||
-            name.includes('badge') ||
-            name.includes('emblem') ||
-            name.includes('toyota')
-          ) {
-            node.visible = false
-          }
-        })
-
-        // Применяем материалы
         car.traverse((node) => {
           if (!node.isMesh) return
           node.castShadow = true
@@ -230,9 +213,7 @@ export default function Car3D() {
   }, [])
 
   return (
-    // ✅ ИСПРАВЛЕНИЕ: cursor grab + убран лишний zIndex с подсказки
-    <div ref={mountRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', cursor: 'grab' }}>
-
+    <div ref={mountRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
       {loading && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
           <div style={{ width: 200, height: 1, background: 'rgba(255,255,255,0.1)', position: 'relative' }}>
@@ -243,9 +224,8 @@ export default function Car3D() {
           </div>
         </div>
       )}
-
       {!loading && hint && (
-        <div style={{ position: 'absolute', bottom: '12%', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, pointerEvents: 'none', zIndex: 1, animation: 'hf 1s ease 0.5s both' }}>
+        <div style={{ position: 'absolute', bottom: '12%', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, pointerEvents: 'none', zIndex: 10, animation: 'hf 1s ease 0.5s both' }}>
           <style>{`@keyframes hf{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}} @keyframes hs{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}`}</style>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ animation: 'hs 2s ease-in-out infinite', opacity: 0.4 }}>
             <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="1.2"/>
