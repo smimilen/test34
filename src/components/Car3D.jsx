@@ -24,7 +24,6 @@ export default function Car3D() {
     const W = window.innerWidth
     const H = window.innerHeight
 
-    // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.setSize(W, H)
@@ -39,11 +38,9 @@ export default function Car3D() {
     renderer.domElement.style.height = '100%'
     mount.appendChild(renderer.domElement)
 
-    // Scene
     const scene = new THREE.Scene()
     scene.background = null
 
-    // Environment map для отражений
     try {
       const pmrem = new THREE.PMREMGenerator(renderer)
       const env = new RoomEnvironment()
@@ -52,18 +49,14 @@ export default function Car3D() {
       env.dispose()
     } catch(e) {}
 
-    // Camera
     const camera = new THREE.PerspectiveCamera(34, W / H, 0.1, 200)
     camera.position.set(5.0, 2.2, 6.5)
     camera.lookAt(0, 0.5, 0)
 
-    // Controls — с damping для плавного вращения
     const controls = new OrbitControls(camera, renderer.domElement)
     controls.target.set(0, 0.5, 0)
     controls.enablePan = false
     controls.enableZoom = false
-    controls.enableDamping = true
-    controls.dampingFactor = 0.08
     controls.minPolarAngle = Math.PI * 0.12
     controls.maxPolarAngle = Math.PI * 0.50
     controls.autoRotate = true
@@ -80,7 +73,6 @@ export default function Car3D() {
       resumeTimer = setTimeout(() => { controls.autoRotate = true }, 4000)
     })
 
-    // Lights
     const key = new THREE.DirectionalLight(0xffffff, 3.5)
     key.position.set(-6, 10, 4)
     key.castShadow = true
@@ -95,12 +87,8 @@ export default function Car3D() {
     const rim = new THREE.DirectionalLight(0xfff0e0, 1.8)
     rim.position.set(2, 3, -9)
     scene.add(rim)
-    const bounce = new THREE.DirectionalLight(0xffffff, 0.22)
-    bounce.position.set(0, -8, 0)
-    scene.add(bounce)
     scene.add(new THREE.AmbientLight(0xffffff, 0.07))
 
-    // Shadow catcher — невидимый пол только для теней
     const shadowCatcher = new THREE.Mesh(
       new THREE.PlaneGeometry(30, 30),
       new THREE.ShadowMaterial({ opacity: 0.40 })
@@ -110,7 +98,6 @@ export default function Car3D() {
     shadowCatcher.receiveShadow = true
     scene.add(shadowCatcher)
 
-    // Материалы
     const paintMat = new THREE.MeshPhysicalMaterial({
       color: 0x0a0a16, metalness: 0.95, roughness: 0.04,
       clearcoat: 1.0, clearcoatRoughness: 0.03, reflectivity: 1.0,
@@ -129,7 +116,7 @@ export default function Car3D() {
       color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.5, roughness: 0.1,
     })
 
-    // Draco loader
+    // DRACOLoader — декодер берётся с CDN
     const dracoLoader = new DRACOLoader()
     dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/')
 
@@ -146,33 +133,17 @@ export default function Car3D() {
       (gltf) => {
         car = gltf.scene
 
-        // Масштаб — на 10% больше (4.4 вместо 4.0)
         const box = new THREE.Box3().setFromObject(car)
         const size = box.getSize(new THREE.Vector3())
         const center = box.getCenter(new THREE.Vector3())
-        const scale = 4.4 / Math.max(size.x, size.y, size.z)
+        const scale = 4.0 / Math.max(size.x, size.y, size.z)
         car.scale.setScalar(scale)
 
-        // Центрируем
         box.setFromObject(car)
         box.getCenter(center)
         car.position.sub(center)
         car.position.y = 0
 
-        // Убираем лого Toyota
-        car.traverse((node) => {
-          const name = node.name.toLowerCase()
-          if (
-            name.includes('logo') ||
-            name.includes('badge') ||
-            name.includes('emblem') ||
-            name.includes('toyota')
-          ) {
-            node.visible = false
-          }
-        })
-
-        // Применяем материалы
         car.traverse((node) => {
           if (!node.isMesh) return
           node.castShadow = true
@@ -193,7 +164,6 @@ export default function Car3D() {
           }
         })
 
-        // Intro анимация — машина поднимается снизу
         car.position.y = -3.0
         car.rotation.y = Math.PI * 0.15
         scene.add(car)
@@ -209,7 +179,6 @@ export default function Car3D() {
       }
     )
 
-    // Render loop
     let rafId
     const animate = () => {
       rafId = requestAnimationFrame(animate)
@@ -245,58 +214,24 @@ export default function Car3D() {
 
   return (
     <div ref={mountRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
-
-      {/* Прогресс загрузки */}
       {loading && (
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 20,
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          pointerEvents: 'none',
-        }}>
+        <div style={{ position: 'absolute', inset: 0, zIndex: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
           <div style={{ width: 200, height: 1, background: 'rgba(255,255,255,0.1)', position: 'relative' }}>
-            <div style={{
-              position: 'absolute', top: 0, left: 0, height: '100%',
-              width: `${progress}%`, background: '#A2050F',
-              transition: 'width 0.3s ease',
-            }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${progress}%`, background: '#A2050F', transition: 'width 0.3s ease' }} />
           </div>
-          <div style={{
-            marginTop: 14, fontSize: 10,
-            color: 'rgba(255,255,255,0.3)',
-            fontFamily: 'Courier New, monospace',
-            letterSpacing: '0.2em',
-          }}>
+          <div style={{ marginTop: 14, fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: 'Courier New, monospace', letterSpacing: '0.2em' }}>
             ЗАГРУЗКА {progress}%
           </div>
         </div>
       )}
-
-      {/* Подсказка про вращение */}
       {!loading && hint && (
-        <div style={{
-          position: 'absolute', bottom: '12%', left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-          pointerEvents: 'none', zIndex: 10,
-          animation: 'hf 1s ease 0.5s both',
-        }}>
-          <style>{`
-            @keyframes hf{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-            @keyframes hs{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}
-          `}</style>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-            style={{ animation: 'hs 2s ease-in-out infinite', opacity: 0.4 }}>
+        <div style={{ position: 'absolute', bottom: '12%', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, pointerEvents: 'none', zIndex: 10, animation: 'hf 1s ease 0.5s both' }}>
+          <style>{`@keyframes hf{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}} @keyframes hs{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}`}</style>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ animation: 'hs 2s ease-in-out infinite', opacity: 0.4 }}>
             <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="1.2"/>
             <path d="M7 12h10M12 7l5 5-5 5" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span style={{
-            fontSize: 10, color: 'rgba(255,255,255,0.35)',
-            fontFamily: 'Courier New,monospace',
-            letterSpacing: '0.16em', textTransform: 'uppercase',
-          }}>
-            Зажмите для поворота
-          </span>
+          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontFamily: 'Courier New,monospace', letterSpacing: '0.16em', textTransform: 'uppercase' }}>Зажмите для поворота</span>
         </div>
       )}
     </div>
